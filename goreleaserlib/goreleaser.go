@@ -40,19 +40,21 @@ var pipes = []pipeline.Pipe{
 	brew.Pipe{},      // push to brew tap
 }
 
-// Flags interface represents an extractor of cli flags
-type Flags interface {
-	IsSet(s string) bool
-	String(s string) string
-	Int(s string) int
-	Bool(s string) bool
+type Flags struct {
+	Config       *string
+	ReleaseNotes *string
+	SkipValidate *bool
+	SkipPublish  *bool
+	Snapshot     *bool
+	RmDist       *bool
+	Parallelism  *int
+	Debug        *bool
 }
 
 // Release runs the release process with the given flags
 func Release(flags Flags) error {
 	var file = getConfigFile(flags)
-	var notes = flags.String("release-notes")
-	if flags.Bool("debug") {
+	if *flags.Debug {
 		log.SetLevel(log.DebugLevel)
 	}
 	cfg, err := config.Load(file)
@@ -60,30 +62,31 @@ func Release(flags Flags) error {
 		// Allow file not found errors if config file was not
 		// explicitly specified
 		_, statErr := os.Stat(file)
-		if !os.IsNotExist(statErr) || flags.IsSet("config") {
+		if !os.IsNotExist(statErr) || flags.Config != nil {
 			return err
 		}
 		log.WithField("file", file).Warn("could not load config, using defaults")
 	}
 	var ctx = context.New(cfg)
-	ctx.Parallelism = flags.Int("parallelism")
+	ctx.Parallelism = *flags.Parallelism
 	log.Debugf("parallelism: %v", ctx.Parallelism)
-	ctx.Validate = !flags.Bool("skip-validate")
-	ctx.Publish = !flags.Bool("skip-publish")
-	if notes != "" {
-		bts, err := ioutil.ReadFile(notes)
+	ctx.Validate = !*flags.SkipValidate
+	ctx.Publish = !*flags.SkipPublish
+	if *flags.ReleaseNotes != "" {
+		bts, err := ioutil.ReadFile(*flags.ReleaseNotes)
 		if err != nil {
 			return err
 		}
-		log.WithField("notes", notes).Info("loaded custom release notes")
+		log.WithField("notes", *flags.ReleaseNotes).
+			Info("loaded custom release notes")
 		ctx.ReleaseNotes = string(bts)
 	}
-	ctx.Snapshot = flags.Bool("snapshot")
+	ctx.Snapshot = *flags.Snapshot
 	if ctx.Snapshot {
 		log.Info("publishing disabled in snapshot mode")
 		ctx.Publish = false
 	}
-	ctx.RmDist = flags.Bool("rm-dist")
+	ctx.RmDist = *flags.RmDist
 	for _, pipe := range pipes {
 		log.Infof("\033[1m%s\033[0m", strings.ToUpper(pipe.Description()))
 		if err := handle(pipe.Run(ctx)); err != nil {
@@ -128,9 +131,9 @@ func InitProject(filename string) error {
 }
 
 func getConfigFile(flags Flags) string {
-	var config = flags.String("config")
-	if flags.IsSet("config") {
-		return config
+	var config = flags.Config
+	if config != nil {
+		return *config
 	}
 	for _, f := range []string{
 		".goreleaser.yml",
@@ -143,5 +146,5 @@ func getConfigFile(flags Flags) string {
 			return f
 		}
 	}
-	return config
+	return *config
 }
