@@ -7,8 +7,10 @@ import (
 	"strconv"
 
 	"github.com/alecthomas/kingpin"
+
 	"github.com/apex/log"
-	lcli "github.com/apex/log/handlers/cli"
+	"github.com/apex/log/handlers/cli"
+
 	"github.com/goreleaser/goreleaser/goreleaserlib"
 )
 
@@ -19,7 +21,7 @@ var (
 )
 
 func init() {
-	log.SetHandler(lcli.New(os.Stdout))
+	log.SetHandler(cli.New(os.Stdout))
 }
 
 var (
