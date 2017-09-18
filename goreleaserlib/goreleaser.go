@@ -41,52 +41,52 @@ var pipes = []pipeline.Pipe{
 }
 
 type Flags struct {
-	Config       *string
-	ReleaseNotes *string
-	SkipValidate *bool
-	SkipPublish  *bool
-	Snapshot     *bool
-	RmDist       *bool
-	Parallelism  *int
-	Debug        *bool
+	Config       string
+	ReleaseNotes string
+	SkipValidate bool
+	SkipPublish  bool
+	Snapshot     bool
+	RmDist       bool
+	Parallelism  int
+	Debug        bool
 }
 
 // Release runs the release process with the given flags
 func Release(flags Flags) error {
-	var file = getConfigFile(flags)
-	if *flags.Debug {
+	if flags.Debug {
 		log.SetLevel(log.DebugLevel)
 	}
+	var file = getConfigFile(flags)
 	cfg, err := config.Load(file)
 	if err != nil {
 		// Allow file not found errors if config file was not
 		// explicitly specified
 		_, statErr := os.Stat(file)
-		if !os.IsNotExist(statErr) || flags.Config != nil {
+		if !os.IsNotExist(statErr) || flags.Config != "" {
 			return err
 		}
 		log.WithField("file", file).Warn("could not load config, using defaults")
 	}
 	var ctx = context.New(cfg)
-	ctx.Parallelism = *flags.Parallelism
+	ctx.Parallelism = flags.Parallelism
 	log.Debugf("parallelism: %v", ctx.Parallelism)
-	ctx.Validate = !*flags.SkipValidate
-	ctx.Publish = !*flags.SkipPublish
-	if *flags.ReleaseNotes != "" {
-		bts, err := ioutil.ReadFile(*flags.ReleaseNotes)
+	ctx.Validate = !flags.SkipValidate
+	ctx.Publish = !flags.SkipPublish
+	if flags.ReleaseNotes != "" {
+		bts, err := ioutil.ReadFile(flags.ReleaseNotes)
 		if err != nil {
 			return err
 		}
-		log.WithField("notes", *flags.ReleaseNotes).
+		log.WithField("notes", flags.ReleaseNotes).
 			Info("loaded custom release notes")
 		ctx.ReleaseNotes = string(bts)
 	}
-	ctx.Snapshot = *flags.Snapshot
+	ctx.Snapshot = flags.Snapshot
 	if ctx.Snapshot {
 		log.Info("publishing disabled in snapshot mode")
 		ctx.Publish = false
 	}
-	ctx.RmDist = *flags.RmDist
+	ctx.RmDist = flags.RmDist
 	for _, pipe := range pipes {
 		log.Infof("\033[1m%s\033[0m", strings.ToUpper(pipe.Description()))
 		if err := handle(pipe.Run(ctx)); err != nil {
@@ -132,8 +132,8 @@ func InitProject(filename string) error {
 
 func getConfigFile(flags Flags) string {
 	var config = flags.Config
-	if config != nil {
-		return *config
+	if config != "" {
+		return config
 	}
 	for _, f := range []string{
 		".goreleaser.yml",
@@ -146,5 +146,5 @@ func getConfigFile(flags Flags) string {
 			return f
 		}
 	}
-	return *config
+	return ""
 }
