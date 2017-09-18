@@ -40,6 +40,7 @@ var pipes = []pipeline.Pipe{
 	brew.Pipe{},      // push to brew tap
 }
 
+// Flags accepted by the goreleaser entry point
 type Flags struct {
 	Config       string
 	ReleaseNotes string
