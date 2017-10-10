@@ -4,7 +4,7 @@ title: Snapcraft Linux Packages
 
 GoReleaser can generate `snap` packages. [Snaps](http://snapcraft.io/) are a
 new packaging format, that will let you publish your project directly to the
-Ubuntu store. From there it will be installable in all the
+Snap Store. From there it will be installable in all the
 [supported Linux distros](https://snapcraft.io/docs/core/install), with
 automatic and transactional updates.
 
